@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../services/api";
-import { UserPlus, ShieldCheck, Save } from "lucide-react";
+import { UserPlus, Save, Activity, HeartPulse } from "lucide-react";
 
 const RegisterSoldier = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +9,7 @@ const RegisterSoldier = () => {
     rank: "",
     unit: "",
     bloodGroup: "",
+    role: "SOLDIER", // Default role
   });
 
   const handleSubmit = async (e) => {
@@ -22,6 +23,7 @@ const RegisterSoldier = () => {
         rank: "",
         unit: "",
         bloodGroup: "",
+        role: "SOLDIER",
       });
     } catch (err) {
       alert(err.response?.data?.message || "Registration Failed");
@@ -40,7 +42,7 @@ const RegisterSoldier = () => {
               Enrollment Portal
             </h1>
             <p className="text-slate-500 font-mono text-xs uppercase tracking-widest">
-              Add new biometric node to command
+              Add biometric node to unit
             </p>
           </div>
         </header>
@@ -55,27 +57,55 @@ const RegisterSoldier = () => {
             value={formData.soldierId}
             onChange={(v) => setFormData({ ...formData, soldierId: v })}
           />
-
           <InputGroup
             label="Full Name"
             placeholder="John Doe"
             value={formData.name}
             onChange={(v) => setFormData({ ...formData, name: v })}
           />
-
           <InputGroup
             label="Rank"
             placeholder="Major / Captain"
             value={formData.rank}
             onChange={(v) => setFormData({ ...formData, rank: v })}
           />
-
           <InputGroup
-            label="Assigned Unit"
-            placeholder="Special Ops / Infantry"
-            value={formData.unit}
-            onChange={(v) => setFormData({ ...formData, unit: v })}
+            label="Blood Group"
+            placeholder="O+ / AB-"
+            value={formData.bloodGroup}
+            onChange={(v) => setFormData({ ...formData, bloodGroup: v })}
           />
+
+          {/* Role Selection (Soldier vs Medic) */}
+          <div className="md:col-span-2 flex flex-col gap-3">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+              Designation
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: "SOLDIER" })}
+                className={`p-4 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                  formData.role === "SOLDIER"
+                    ? "bg-emerald-600 border-emerald-500 text-white"
+                    : "bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700"
+                }`}
+              >
+                <Activity size={18} /> COMBATANT
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: "MEDIC" })}
+                className={`p-4 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                  formData.role === "MEDIC"
+                    ? "bg-red-600 border-red-500 text-white"
+                    : "bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700"
+                }`}
+              >
+                <HeartPulse size={18} /> UNIT MEDIC
+              </button>
+            </div>
+          </div>
 
           <button className="md:col-span-2 group flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black tracking-[0.3em] transition-all transform active:scale-95 shadow-xl shadow-emerald-900/20">
             <Save
@@ -90,7 +120,6 @@ const RegisterSoldier = () => {
   );
 };
 
-// DRY Helper Component
 const InputGroup = ({ label, placeholder, value, onChange }) => (
   <div className="flex flex-col gap-2">
     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
