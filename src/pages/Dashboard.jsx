@@ -71,23 +71,6 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-200 font-sans">
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 p-6 hidden md:block">
-        <div className="flex items-center gap-2 mb-10 text-emerald-500">
-          <Shield size={28} />
-          <h1 className="font-bold text-xl tracking-tighter text-white uppercase">
-            Command-X
-          </h1>
-        </div>
-        <nav className="space-y-4 text-sm font-bold uppercase tracking-widest">
-          <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <Activity size={18} /> Dashboard
-          </button>
-          <button className="flex items-center gap-3 w-full p-3 rounded-xl text-slate-500 hover:bg-slate-800 transition">
-            <User size={18} /> Unit Roster
-          </button>
-        </nav>
-      </aside>
-
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         <header className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
           <div>
