@@ -1,15 +1,32 @@
 import { useState } from "react";
 import api from "../services/api";
-import { UserPlus, Save, Activity, HeartPulse } from "lucide-react";
+import {
+  UserPlus,
+  Save,
+  Activity,
+  HeartPulse,
+  ChevronDown,
+} from "lucide-react";
 
 const RegisterSoldier = () => {
+  // Common military ranks for the dropdown
+  const RANKS = [
+    "Private",
+    "Corporal",
+    "Sergeant",
+    "Lieutenant",
+    "Captain",
+    "Major",
+    "Colonel",
+  ];
+
   const [formData, setFormData] = useState({
     soldierId: "",
     name: "",
-    rank: "",
-    unit: "",
+    rank: "Private", // Default to lowest rank
+    unit: "", // Added Unit field
     bloodGroup: "",
-    role: "SOLDIER", // Default role
+    role: "SOLDIER",
   });
 
   const handleSubmit = async (e) => {
@@ -20,7 +37,7 @@ const RegisterSoldier = () => {
       setFormData({
         soldierId: "",
         name: "",
-        rank: "",
+        rank: "Private",
         unit: "",
         bloodGroup: "",
         role: "SOLDIER",
@@ -63,12 +80,40 @@ const RegisterSoldier = () => {
             value={formData.name}
             onChange={(v) => setFormData({ ...formData, name: v })}
           />
+
+          {/* Professional Rank Selection */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+              Military Rank
+            </label>
+            <div className="relative">
+              <select
+                value={formData.rank}
+                onChange={(e) =>
+                  setFormData({ ...formData, rank: e.target.value })
+                }
+                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl text-white outline-none appearance-none focus:border-emerald-500/50 transition-all font-mono"
+              >
+                {RANKS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+                size={16}
+              />
+            </div>
+          </div>
+
           <InputGroup
-            label="Rank"
-            placeholder="Major / Captain"
-            value={formData.rank}
-            onChange={(v) => setFormData({ ...formData, rank: v })}
+            label="Assigned Unit"
+            placeholder="Infantry / Special Ops"
+            value={formData.unit}
+            onChange={(v) => setFormData({ ...formData, unit: v })}
           />
+
           <InputGroup
             label="Blood Group"
             placeholder="O+ / AB-"
@@ -76,7 +121,11 @@ const RegisterSoldier = () => {
             onChange={(v) => setFormData({ ...formData, bloodGroup: v })}
           />
 
-          {/* Role Selection (Soldier vs Medic) */}
+          <div className="md:col-span-1 flex flex-col gap-3">
+            {/* Empty space for grid alignment or add another field here */}
+          </div>
+
+          {/* Role Selection */}
           <div className="md:col-span-2 flex flex-col gap-3">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
               Designation
