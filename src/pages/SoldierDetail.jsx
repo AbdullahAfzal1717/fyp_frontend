@@ -3,17 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { socket } from "../services/socket";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from "recharts";
-import {
   Activity,
   Thermometer,
   Droplets,
@@ -24,44 +13,36 @@ import {
   Shield,
   Briefcase,
 } from "lucide-react";
+import TacticalChart from "../components/Detail/TacticalChart";
 
 const SoldierDetail = () => {
-  const { id } = useParams(); // This is the soldierId (e.g., FC-247)
+  const { id } = useParams();
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
-  const [profile, setProfile] = useState(null); // Added for bio-data
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchEverything = async () => {
       try {
-        setLoading(true);
-        // 1. Fetch Vitals History
-        const vitalsRes = await api.get(`/vitals/${id}`);
+        const [vitalsRes, soldiersRes] = await Promise.all([
+          api.get(`/vitals/${id}`),
+          api.get(`/soldiers`),
+        ]);
         setHistory([...vitalsRes.data].reverse());
-
-        // 2. Fetch Soldier Profile (Professional Gap-fill)
-        // Note: You'll need an endpoint like GET /soldiers/:id on your backend
-        const profileRes = await api.get(`/soldiers`);
-        const soldierData = profileRes.data.find((s) => s.soldierId === id);
-        setProfile(soldierData);
-
-        setError(null);
+        setProfile(soldiersRes.data.find((s) => s.soldierId === id));
       } catch (err) {
-        setError("TACTICAL_DATABASE_OFFLINE");
+        console.error("Link Failure");
       } finally {
         setLoading(false);
       }
     };
+
     fetchEverything();
 
     socket.on("newVitals", (newData) => {
       if (newData.soldierId === id) {
-        setHistory((prev) => {
-          const updated = [...prev, newData];
-          return updated.slice(-30);
-        });
+        setHistory((prev) => [...prev, newData].slice(-30));
       }
     });
 
@@ -70,47 +51,50 @@ const SoldierDetail = () => {
 
   if (loading)
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-blue-500 font-mono text-sm tracking-widest">
-        <Clock className="animate-spin mr-2" /> DECRYPTING BIOMETRIC PACKETS...
+      <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-blue-500 font-mono">
+        <Clock className="animate-spin mb-4" size={32} />
+        <span className="tracking-[0.5em] text-[10px] uppercase">
+          Establishing Tactical Link...
+        </span>
       </div>
     );
 
   const current = history[history.length - 1];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-300 p-6 md:p-10">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-slate-600 hover:text-white transition mb-8 uppercase text-[10px] font-black tracking-[0.2em]"
+        className="flex items-center gap-2 text-slate-600 hover:text-white transition mb-10 text-[10px] font-black uppercase tracking-widest"
       >
-        <ArrowLeft size={14} /> Return to Sector Hub
+        <ArrowLeft size={14} /> Back to Command Hub
       </button>
 
-      <div className="max-w-6xl mx-auto">
-        {/* TOP PROFILE BAR */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between mb-10 border-b border-slate-800 pb-8 gap-6">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-blue-600/10 border border-blue-500/20 rounded-3xl flex items-center justify-center text-blue-500">
-              <User size={40} />
+      <div className="max-w-7xl mx-auto">
+        {/* Header: Bio-Data Section */}
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 border-b border-slate-800 pb-10 gap-8">
+          <div className="flex items-center gap-8">
+            <div className="w-24 h-24 bg-blue-500/10 border border-blue-500/20 rounded-[2rem] flex items-center justify-center text-blue-500 shadow-2xl shadow-blue-500/5">
+              <User size={48} />
             </div>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
-                  {profile?.name || "Unknown Personnel"}
+              <div className="flex items-center gap-4">
+                <h1 className="text-5xl font-black text-white uppercase italic tracking-tighter">
+                  {profile?.name || "Unknown"}
                 </h1>
-                <span className="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold font-mono">
+                <span className="bg-slate-800 text-blue-400 px-4 py-1.5 rounded-xl text-xs font-mono border border-slate-700">
                   {id}
                 </span>
               </div>
-              <div className="flex gap-4 mt-2 text-slate-500 font-mono text-[10px] uppercase tracking-widest">
-                <span className="flex items-center gap-1">
-                  <Shield size={12} /> {profile?.rank || "Unranked"}
+              <div className="flex flex-wrap gap-6 mt-4 text-slate-500 font-mono text-[11px] uppercase tracking-widest">
+                <span className="flex items-center gap-2">
+                  <Shield size={14} /> {profile?.rank}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Briefcase size={12} /> {profile?.unit || "No Unit"}
+                <span className="flex items-center gap-2">
+                  <Briefcase size={14} /> {profile?.unit}
                 </span>
-                <span className="text-blue-500 font-bold">
-                  Blood Group: {profile?.bloodGroup || "O+"}
+                <span className="text-blue-500 font-bold tracking-normal">
+                  BLOOD GROUP: {profile?.bloodGroup}
                 </span>
               </div>
             </div>
@@ -118,174 +102,93 @@ const SoldierDetail = () => {
 
           {current && (
             <div
-              className={`px-6 py-3 rounded-2xl border flex items-center gap-3 ${
+              className={`px-8 py-4 rounded-3xl border flex items-center gap-4 transition-all ${
                 current.riskLevel === "CRITICAL"
-                  ? "bg-red-500/10 border-red-600 text-red-500 animate-pulse"
-                  : current.riskLevel === "WARNING"
-                  ? "bg-amber-500/10 border-amber-600 text-amber-500"
-                  : "bg-emerald-500/10 border-emerald-600 text-emerald-500"
+                  ? "bg-red-500/10 border-red-500 text-red-500 animate-pulse"
+                  : "bg-emerald-500/10 border-emerald-500 text-emerald-500"
               }`}
             >
-              <ShieldAlert size={20} />
-              <span className="font-black text-xl tracking-tighter uppercase italic">
+              <ShieldAlert size={24} />
+              <span className="font-black text-2xl uppercase italic">
                 {current.riskLevel}
               </span>
             </div>
           )}
         </header>
 
-        {/* DATA GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <StatCard
-            icon={<Activity className="text-red-500" />}
+        {/* Real-time Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <StatTile
+            icon={<Activity />}
             label="Heart Rate"
             value={current?.heartRate}
             unit="BPM"
+            color="text-red-500"
           />
-          <StatCard
-            icon={<Thermometer className="text-orange-500" />}
-            label="Core Thermal"
+          <StatTile
+            icon={<Thermometer />}
+            label="Body Temp"
             value={current?.temperature}
             unit="°C"
+            color="text-orange-500"
           />
-          <StatCard
-            icon={<Droplets className="text-blue-500" />}
-            label="Oxygen Saturation"
+          <StatTile
+            icon={<Droplets />}
+            label="Blood O2"
             value={current?.spo2}
             unit="%"
+            color="text-blue-500"
           />
         </div>
 
-        {/* CHARTS SECTION */}
-        <div className="space-y-8">
-          <ChartWrapper
-            title="Biometric Heart Trend"
-            color="#ef4444"
-            data={history}
-            dataKey="heartRate"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <ChartWrapper
-              title="Temperature Variance"
-              color="#f97316"
+        {/* Tactical Trends (Charts) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="lg:col-span-2">
+            <TacticalChart
+              title="Real-time Heartbeat Trend"
+              color="#ef4444"
               data={history}
-              dataKey="temperature"
-              isArea
-            />
-            <ChartWrapper
-              title="O2 Stability Index"
-              color="#3b82f6"
-              data={history}
-              dataKey="spo2"
-              isArea
+              dataKey="heartRate"
             />
           </div>
+          <TacticalChart
+            title="Core Temperature Log"
+            color="#f97316"
+            data={history}
+            dataKey="temperature"
+            type="area"
+          />
+          <TacticalChart
+            title="Oxygen Saturation Index"
+            color="#3b82f6"
+            data={history}
+            dataKey="spo2"
+            type="area"
+          />
         </div>
       </div>
     </div>
   );
 };
 
-const StatCard = ({ icon, label, value, unit }) => (
-  <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] relative group hover:border-slate-700 transition-all shadow-xl">
-    <div className="absolute top-6 right-6 opacity-30 group-hover:opacity-100 transition-opacity">
+// Internal Page Components for better readability
+const StatTile = ({ icon, label, value, unit, color }) => (
+  <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] group hover:border-slate-600 transition-all">
+    <div
+      className={`mb-4 ${color} opacity-40 group-hover:opacity-100 transition-opacity`}
+    >
       {icon}
     </div>
-    <p className="text-slate-600 text-[10px] uppercase font-black tracking-[0.2em] mb-2">
+    <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.25em] mb-2">
       {label}
     </p>
     <div className="flex items-baseline gap-2">
       <span className="text-5xl font-mono font-black text-white tracking-tighter">
-        {value || "--"}
+        {value || "00"}
       </span>
-      <span className="text-slate-600 text-xs font-bold uppercase">{unit}</span>
-    </div>
-  </div>
-);
-
-const ChartWrapper = ({ title, color, data, dataKey, isArea = false }) => (
-  <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] shadow-2xl">
-    <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
-      <span
-        className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)]"
-        style={{ backgroundColor: color }}
-      ></span>
-      {title}
-    </h3>
-    <div className="h-[280px]">
-      <ResponsiveContainer width="100%" height="100%">
-        {isArea ? (
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id={`grad${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.4} />
-                <stop offset="95%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#1e293b"
-              vertical={false}
-            />
-            <XAxis dataKey="timestamp" hide />
-            <YAxis
-              stroke="#475569"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              domain={["auto", "auto"]}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#020617",
-                border: "1px solid #1e293b",
-                borderRadius: "12px",
-                fontSize: "10px",
-                color: "#fff",
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey={dataKey}
-              stroke={color}
-              fill={`url(#grad${dataKey})`}
-              strokeWidth={4}
-            />
-          </AreaChart>
-        ) : (
-          <LineChart data={data}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#1e293b"
-              vertical={false}
-            />
-            <XAxis dataKey="timestamp" hide />
-            <YAxis
-              stroke="#475569"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              domain={["auto", "auto"]}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#020617",
-                border: "1px solid #1e293b",
-                borderRadius: "12px",
-                fontSize: "10px",
-                color: "#fff",
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey={dataKey}
-              stroke={color}
-              strokeWidth={4}
-              dot={false}
-            />
-          </LineChart>
-        )}
-      </ResponsiveContainer>
+      <span className="text-slate-600 text-[10px] font-bold uppercase">
+        {unit}
+      </span>
     </div>
   </div>
 );

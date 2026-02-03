@@ -1,9 +1,21 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
-import { ShieldAlert, UserPlus, MapPin, List } from "lucide-react";
+import {
+  ShieldAlert,
+  UserPlus,
+  List,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+  Globe,
+} from "lucide-react";
+import { TacticalInput } from "../components/ui/Input";
+import CommanderNode from "../components/Admin/CommanderNode";
 
 const SuperAdminDashboard = () => {
   const [commanders, setCommanders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,8 +24,14 @@ const SuperAdminDashboard = () => {
   });
 
   const fetchCommanders = async () => {
-    const res = await api.get("/admin/commanders");
-    setCommanders(res.data);
+    try {
+      const res = await api.get("/admin/commanders");
+      setCommanders(res.data);
+    } catch (err) {
+      console.error("GHQ Link Failure");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -24,110 +42,117 @@ const SuperAdminDashboard = () => {
     e.preventDefault();
     try {
       await api.post("/admin/create-commander", formData);
-      alert("COMMANDER ACCOUNT ACTIVATED");
       setFormData({ name: "", email: "", password: "", region: "" });
-      fetchCommanders();
+      fetchCommanders(); // Refresh list
     } catch (err) {
-      alert("Registration Failed: Clearance Issue");
+      alert("Registration Failed: Insufficient Clearance");
     }
   };
 
+  if (loading)
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-blue-500 font-mono">
+        <Loader2 className="animate-spin mb-4" />
+        <span className="text-[10px] tracking-[0.4em]">
+          AUTHENTICATING GHQ ACCESS...
+        </span>
+      </div>
+    );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-12 border-b border-slate-800 pb-8 flex justify-between items-center">
+    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-12">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-12 border-b border-slate-800 pb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <h1 className="text-4xl font-black italic uppercase tracking-tighter">
               GHQ Command Center
             </h1>
-            <p className="text-slate-500 font-mono text-xs uppercase tracking-widest mt-2">
-              Strategic Personnel Management
+            <p className="text-slate-500 font-mono text-[10px] uppercase tracking-widest mt-2">
+              Strategic Personnel Management :: LEVEL_5_CLEARANCE
             </p>
           </div>
-          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-500 flex items-center gap-3">
-            <ShieldAlert size={24} />{" "}
-            <span className="font-bold text-xs uppercase">
-              Level 5 Access Granted
+          <div className="px-5 py-3 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-500 flex items-center gap-3 animate-pulse">
+            <ShieldAlert size={20} />
+            <span className="font-black text-[10px] uppercase tracking-widest">
+              Administrator Node
             </span>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Form: Create Commander */}
-          <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2rem] h-fit">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-emerald-500">
-              <UserPlus size={20} /> Appoint New Commander
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Appointment Form */}
+          <div className="lg:col-span-4 bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl h-fit">
+            <h3 className="text-sm font-black mb-8 flex items-center gap-3 text-emerald-500 uppercase tracking-[0.2em]">
+              <UserPlus size={18} /> Appoint Commander
             </h3>
-            <form onSubmit={handleCreateCommander} className="space-y-4">
-              <AdminInput
+            <form onSubmit={handleCreateCommander} className="space-y-5">
+              <TacticalInput
                 label="Full Name"
+                icon={User}
                 value={formData.name}
                 onChange={(v) => setFormData({ ...formData, name: v })}
+                required
               />
-              <AdminInput
-                label="Email"
+              <TacticalInput
+                label="Military Email"
+                icon={Mail}
+                type="email"
                 value={formData.email}
                 onChange={(v) => setFormData({ ...formData, email: v })}
+                required
               />
-              <AdminInput
-                label="Temporary Password"
+              <TacticalInput
+                label="Authorization Key"
+                icon={Lock}
+                type="password"
                 value={formData.password}
                 onChange={(v) => setFormData({ ...formData, password: v })}
+                required
               />
-              <AdminInput
+              <TacticalInput
                 label="Assigned Sector"
-                placeholder="Faisalabad / Sialkot"
+                icon={Globe}
+                placeholder="e.g. Faisalabad Base"
                 value={formData.region}
                 onChange={(v) => setFormData({ ...formData, region: v })}
+                required
               />
-              <button className="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all mt-4">
-                ACTIVATE ACCOUNT
+
+              <button className="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] transition-all transform active:scale-95 shadow-lg shadow-blue-900/20 mt-4">
+                Initialize Account
               </button>
             </form>
           </div>
 
-          {/* List: Active Commanders */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 p-8 rounded-[2rem]">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-blue-500">
-              <List size={20} /> Active Sector Commanders
-            </h3>
-            <div className="space-y-4">
+          {/* Commander Directory */}
+          <div className="lg:col-span-8 bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-sm font-black flex items-center gap-3 text-blue-500 uppercase tracking-[0.2em]">
+                <List size={18} /> Sector Command Directory
+              </h3>
+              <span className="text-[10px] font-mono text-slate-500 uppercase">
+                Total Officers: {commanders.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {commanders.map((c) => (
-                <div
-                  key={c._id}
-                  className="bg-slate-950 border border-slate-800 p-5 rounded-2xl flex justify-between items-center"
-                >
-                  <div>
-                    <h4 className="font-bold text-white uppercase">{c.name}</h4>
-                    <p className="text-xs text-slate-500 font-mono">
-                      {c.email}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-emerald-500 font-mono text-[10px] bg-emerald-500/5 px-3 py-1 rounded-lg border border-emerald-500/10">
-                    <MapPin size={12} /> {c.region}
-                  </div>
-                </div>
+                <CommanderNode key={c._id} commander={c} />
               ))}
             </div>
+
+            {commanders.length === 0 && (
+              <div className="py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
+                <p className="text-slate-600 font-mono text-[10px] uppercase tracking-widest">
+                  No Active Commanders Assigned
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-const AdminInput = ({ label, value, onChange, placeholder = "" }) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">
-      {label}
-    </label>
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-white outline-none focus:border-blue-500/50 transition-all text-sm"
-    />
-  </div>
-);
 
 export default SuperAdminDashboard;
