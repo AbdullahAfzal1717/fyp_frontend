@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api from "../services/api";
+import api from "../../../services/api";
 import {
   ShieldAlert,
   UserPlus,
@@ -10,8 +10,8 @@ import {
   User,
   Globe,
 } from "lucide-react";
-import { TacticalInput } from "../components/ui/Input";
-import CommanderNode from "../components/Admin/CommanderNode";
+import { TacticalInput } from "../../../components/ui/Input";
+import CommanderNode from "../../../components/Admin/CommanderNode";
 
 const SuperAdminDashboard = () => {
   const [commanders, setCommanders] = useState([]);

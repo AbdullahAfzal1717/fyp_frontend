@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import api from "../services/api";
+import api from "../../../services/api";
 import { Globe, Loader2 } from "lucide-react";
-import SectorCard from "../components/Admin/SectorCard";
+import SectorCard from "../../../components/Admin/SectorCard";
 
 const ManageSectors = () => {
   const [sectors, setSectors] = useState({});

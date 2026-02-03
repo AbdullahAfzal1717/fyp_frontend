@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../services/api";
-import { socket } from "../services/socket";
+import api from "../../../services/api";
+import { socket } from "../../../services/socket";
 import {
   Activity,
   Thermometer,
@@ -13,7 +13,7 @@ import {
   Shield,
   Briefcase,
 } from "lucide-react";
-import TacticalChart from "../components/Detail/TacticalChart";
+import TacticalChart from "../../../components/Detail/TacticalChart";
 
 const SoldierDetail = () => {
   const { id } = useParams();

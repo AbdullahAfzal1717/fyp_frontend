@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../services/api";
+import api from "../../../services/api";
 import {
   UserPlus,
   Save,
@@ -8,7 +8,7 @@ import {
   ChevronDown,
   CheckCircle2,
 } from "lucide-react";
-import { TacticalInput } from "../components/ui/Input";
+import { TacticalInput } from "../../../components/ui/Input";
 
 const RegisterSoldier = () => {
   const RANKS = [

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
-import { socket } from "../services/socket";
+import api from "../../../services/api";
+import { useAuth } from "../../../context/AuthContext";
+import { socket } from "../../../services/socket";
 import { Activity, AlertTriangle } from "lucide-react";
-import VitalNode from "../components/Dashboard/VitalNode";
+import VitalNode from "../../../components/Dashboard/VitalNode";
 
 const Dashboard = () => {
   const [soldiers, setSoldiers] = useState([]);

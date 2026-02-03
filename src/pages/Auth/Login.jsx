@@ -1,8 +1,8 @@
 import { useState } from "react";
-import api from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import { Lock, User, ShieldCheck, Terminal, AlertCircle } from "lucide-react";
-import { TacticalInput } from "../components/ui/Input";
+import { TacticalInput } from "../../components/ui/Input";
 
 const Login = () => {
   const [email, setEmail] = useState("");

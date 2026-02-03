@@ -1,13 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import SoldierDetail from "./pages/SoldierDetail";
-import SoldierRoster from "./pages/SoldierRoster";
-import RegisterSoldier from "./pages/RegisterSoldier";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard"; // New Page
-import ProtectedRoute from "./routes/ProtectedRoute";
-import Login from "./pages/Login";
+import SuperAdminDashboard from "./pages/SuperAdmin/AdminDashboard/SuperAdminDashboard";
+import ManageSectors from "./pages/SuperAdmin/ManageSectors/ManageSectors";
+import Dashboard from "./pages/Viewer/Dashboard/Dashboard";
 import Sidebar from "./components/Sidebar/Sidebar";
-import ManageSectors from "./pages/ManageSectors";
+import RegisterSoldier from "./pages/Viewer/RegisterSoldier/RegisterSoldier";
+import SoldierRoster from "./pages/Viewer/SoldeirRoster/SoldierRoster";
+import SoldierDetail from "./pages/Viewer/SoldierDetails/SoldierDetail";
+import Login from "./pages/Auth/Login";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Professional Layout Wrapper
 const Layout = ({ children }) => (

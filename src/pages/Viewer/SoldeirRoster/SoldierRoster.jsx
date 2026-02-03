@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api from "../../../services/api";
 import { ShieldCheck, Search, Users, Loader2 } from "lucide-react";
-import RosterRow from "../components/Roster/RosterRow";
+import RosterRow from "../../../components/Roster/RosterRow";
 
 const SoldierRoster = () => {
   const [soldiers, setSoldiers] = useState([]);
