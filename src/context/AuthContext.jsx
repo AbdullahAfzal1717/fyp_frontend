@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error("Session invalid or expired");
-      logout();
     } finally {
       setLoading(false);
     }
@@ -40,7 +39,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = ({ token, userData }) => {
     localStorage.setItem("token", token);
-    console.log(userData);
     setUser(userData);
     navigate(userData.role === "SUPER_ADMIN" ? "/admin-hq" : "/");
   };

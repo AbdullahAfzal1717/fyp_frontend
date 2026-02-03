@@ -16,7 +16,6 @@ const Login = () => {
     setError(null);
     try {
       const res = await api.post("/auth/login", { email, password });
-      console.log(res);
       // Passing the token to your context login function as per your code
       login(res.data);
     } catch (err) {
