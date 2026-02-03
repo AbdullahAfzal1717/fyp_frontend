@@ -7,6 +7,7 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard"; // New Page
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
 import Sidebar from "./components/Sidebar/Sidebar";
+import ManageSectors from "./pages/ManageSectors";
 
 // Professional Layout Wrapper
 const Layout = ({ children }) => (
@@ -28,6 +29,17 @@ function App() {
           <ProtectedRoute requiredRole="SUPER_ADMIN">
             <Layout>
               <SuperAdminDashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage-sectors"
+        element={
+          <ProtectedRoute requiredRole="SUPER_ADMIN">
+            <Layout>
+              {" "}
+              <ManageSectors />{" "}
             </Layout>
           </ProtectedRoute>
         }
