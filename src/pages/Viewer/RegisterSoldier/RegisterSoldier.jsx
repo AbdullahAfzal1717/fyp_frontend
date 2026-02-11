@@ -50,6 +50,7 @@ const RegisterSoldier = () => {
         });
       }, 3000);
     } catch (err) {
+      console.log(err);
       alert(err.response?.data?.message || "Registration Failed");
     }
   };
