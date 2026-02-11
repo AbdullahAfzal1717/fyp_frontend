@@ -26,8 +26,10 @@ const SuperAdminDashboard = () => {
   const fetchCommanders = async () => {
     try {
       const res = await api.get("/admin/commanders");
+      console.log(res.data);
       setCommanders(res.data);
     } catch (err) {
+      console.log(err);
       console.error("GHQ Link Failure");
     } finally {
       setLoading(false);
