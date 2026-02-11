@@ -47,6 +47,7 @@ const SuperAdminDashboard = () => {
       setFormData({ name: "", email: "", password: "", region: "" });
       fetchCommanders(); // Refresh list
     } catch (err) {
+      console.log(err);
       alert("Registration Failed: Insufficient Clearance");
     }
   };

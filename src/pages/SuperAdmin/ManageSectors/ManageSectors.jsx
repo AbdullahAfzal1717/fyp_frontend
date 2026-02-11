@@ -20,6 +20,7 @@ const ManageSectors = () => {
         }, {});
         setSectors(grouped);
       } catch (err) {
+        console.log(err);
         console.error("Sector Uplink Failed");
       } finally {
         setLoading(false);
