@@ -19,6 +19,7 @@ const Dashboard = () => {
       setSoldiers(response.data);
       setError(null);
     } catch (err) {
+      console.log(err);
       setError("Sync Error: Gateway Unreachable");
     } finally {
       setLoading(false);
@@ -32,7 +33,7 @@ const Dashboard = () => {
     socket.on("newVitals", (updatedSoldier) => {
       setSoldiers((prev) => {
         const index = prev.findIndex(
-          (s) => s.soldierId === updatedSoldier.soldierId
+          (s) => s.soldierId === updatedSoldier.soldierId,
         );
         if (index !== -1) {
           const newList = [...prev];
