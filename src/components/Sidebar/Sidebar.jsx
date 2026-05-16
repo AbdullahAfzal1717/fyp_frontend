@@ -1,135 +1,217 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  Users,
+  Bell,
   UserPlus,
+  FileBarChart,
+  UserCircle,
   LogOut,
-  Shield,
-  Landmark,
-  Settings,
-  Menu,
+  ChevronRight,
   X,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
+import { useAuth } from "../../context/useAuth";
 
-const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user } = useAuth(); // Accessing logged-in user details
+  const [counts, setCounts] = useState({ alerts: 0, pending: 0 });
 
-  // Auto-close sidebar when route changes (for mobile)
+  // 1. Fetch Dynamic Badge Counts
+  const fetchCounts = async () => {
+    try {
+      // Get pending requests count
+      const pendingRes = await api.get("/connections/pending");
+
+      // Get alerts count (fetching for all connected users)
+      const usersRes = await api.get("/connections/my-users");
+      const connectedUsers = usersRes.data || [];
+
+      const alertResponses = await Promise.allSettled(
+        connectedUsers.map((u) => api.get(`/alerts/${u._id}`)),
+      );
+
+      let totalUnreadAlerts = 0;
+      alertResponses.forEach((res) => {
+        if (res.status === "fulfilled") {
+          totalUnreadAlerts += res.value.data.filter((a) => !a.isRead).length;
+        }
+      });
+
+      setCounts({
+        pending: pendingRes.data?.length || 0,
+        alerts: totalUnreadAlerts,
+      });
+    } catch (err) {
+      console.error("Sidebar stats sync failed:", err);
+    }
+  };
+
   useEffect(() => {
-    setIsOpen(false);
-  }, [location]);
+    fetchCounts();
+    // Refresh counts every 30 seconds to keep sidebar "live"
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const commanderMenu = [
-    { path: "/", icon: <LayoutDashboard size={20} />, label: "Live Dashboard" },
-    { path: "/roster", icon: <Users size={20} />, label: "Unit Roster" },
+  // Prevent background scrolling on mobile
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+  }, [isOpen]);
+
+  const navItems = [
+    { path: "/", icon: <LayoutDashboard size={20} />, label: "Dashboard" },
     {
-      path: "/register-soldier",
+      path: "/alerts",
+      icon: <Bell size={20} />,
+      label: "Alerts Log",
+      badge: counts.alerts, // Dynamic Value
+    },
+    {
+      path: "/pending-requests",
       icon: <UserPlus size={20} />,
-      label: "Enlist Personnel",
+      label: "Pending Requests",
+      badge: counts.pending, // Dynamic Value
     },
-  ];
-
-  const adminMenu = [
-    { path: "/admin-hq", icon: <Landmark size={20} />, label: "GHQ Command" },
+    { path: "/reports", icon: <FileBarChart size={20} />, label: "Reports" },
     {
-      path: "/manage-sectors",
-      icon: <Settings size={20} />,
-      label: "Sector Config",
+      path: "/profile",
+      icon: <UserCircle size={20} />,
+      label: "Profile & Settings",
     },
   ];
 
-  const activeMenu = user?.role === "SUPER_ADMIN" ? adminMenu : commanderMenu;
+  const isActive = (path) =>
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
+
+  // Helper for Initials
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
 
   return (
     <>
-      {/* 1. Mobile Toggle Button - Only visible on small screens */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-slate-900 border border-slate-800 rounded-lg text-emerald-500"
-      >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      {/* 2. Mobile Overlay - Blurs background when sidebar is open */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[40] lg:hidden"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* 3. Main Sidebar Container */}
       <aside
         className={`
-        fixed lg:sticky top-0 left-0 z-[50]
-        h-screen w-64 bg-slate-900 border-r border-slate-800 
-        flex flex-col transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          fixed top-0 left-0 h-screen bg-white border-r border-gray-100
+          transition-all duration-300 ease-in-out flex flex-col
+          z-[110] ${isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72"}
+          md:translate-x-0 md:sticky md:z-30 md:w-20 
+          lg:w-64
       `}
       >
-        {/* Header Section */}
-        <div className="p-6 flex items-center gap-2 text-emerald-500 border-b border-slate-800">
-          <Shield
-            size={28}
-            className={
-              user?.role === "SUPER_ADMIN"
-                ? "text-blue-500"
-                : "text-emerald-500"
-            }
-          />
-          <div className="flex flex-col">
-            <span className="font-black tracking-tighter text-white uppercase italic leading-none">
-              Command-X
-            </span>
-            <span className="text-[9px] font-mono text-slate-500 tracking-[0.2em] mt-1">
-              {user?.role === "SUPER_ADMIN" ? "STRATEGIC_HQ" : "TACTICAL_UNIT"}
-            </span>
+        {/* Brand Header */}
+        <div className="h-20 flex items-center px-6 justify-between border-b border-gray-50 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5 text-white fill-current"
+              >
+                <path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" />
+              </svg>
+            </div>
+            <div className="flex flex-col md:hidden lg:flex">
+              <span className="font-bold text-gray-900 leading-none tracking-tight">
+                Command-X
+              </span>
+              <span className="text-[10px] text-gray-400 font-medium mt-0.5">
+                Health Surveillance
+              </span>
+            </div>
           </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="md:hidden p-2 text-gray-400 hover:bg-gray-50 rounded-lg"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
-          {activeMenu.map((item) => (
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-4 md:hidden lg:block">
+            Navigation
+          </p>
+          {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 p-3 rounded-xl transition-all font-bold text-[11px] uppercase tracking-widest ${
-                location.pathname === item.path
-                  ? user?.role === "SUPER_ADMIN"
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
-                    : "bg-emerald-600 text-white shadow-lg shadow-emerald-900/20"
-                  : "text-slate-500 hover:bg-slate-800 hover:text-slate-200"
-              }`}
+              onClick={() => {
+                if (window.innerWidth < 768) setIsOpen(false);
+              }}
+              className={`
+                flex items-center gap-4 px-3 py-3 rounded-xl transition-all
+                ${isActive(item.path) ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-500 hover:bg-gray-50"}
+                md:justify-center lg:justify-start
+              `}
             >
-              {item.icon} {item.label}
+              <span
+                className={
+                  isActive(item.path) ? "text-blue-600" : "text-gray-400"
+                }
+              >
+                {item.icon}
+              </span>
+              <div className="flex items-center flex-1 md:hidden lg:flex">
+                <span className="text-sm flex-1 truncate">{item.label}</span>
+                {item.badge > 0 && (
+                  <span
+                    className={`${item.path === "/alerts" ? "bg-red-500" : "bg-blue-600"} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+                {isActive(item.path) && (
+                  <ChevronRight size={14} className="ml-1 opacity-40" />
+                )}
+              </div>
             </Link>
           ))}
         </nav>
 
-        {/* Bottom Section: Profile & Logout */}
-        <div className="mt-auto">
-          <div className="mx-4 p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50 mb-2">
-            <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-1">
-              Authenticated
-            </p>
-            <p className="text-xs font-bold text-slate-300 truncate">
-              {user?.name || "Officer"}
-            </p>
-            <p className="text-[10px] text-emerald-500/70 font-mono mt-1 uppercase italic">
-              {user?.region || "Faisalabad"}
-            </p>
-          </div>
+        {/* Profile Footer - DYNAMIC */}
+        <div className="p-4 border-t border-gray-50 bg-white">
+          <div className="flex items-center gap-3 p-2 rounded-2xl bg-gray-50 md:justify-center lg:justify-start lg:p-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 border-2 border-white shadow-sm uppercase">
+              {getInitials(user?.name)}
+            </div>
 
-          <button
-            onClick={logout}
-            className="w-[calc(100%-2rem)] mx-4 mb-4 p-3 flex items-center gap-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-all font-bold text-[11px] uppercase tracking-widest border border-transparent hover:border-red-500/20"
-          >
-            <LogOut size={20} /> Terminate Session
-          </button>
+            <div className="flex-1 min-w-0 md:hidden lg:block">
+              <p className="text-[11px] font-bold text-gray-900 truncate">
+                {user?.name || "Healthcare Admin"}
+              </p>
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                {user?.role || "Supervisor"}
+              </p>
+            </div>
+
+            <button
+              onClick={logout}
+              className="p-1.5 text-gray-400 hover:text-red-500 md:hidden lg:block"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -1,101 +1,108 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import SuperAdminDashboard from "./pages/SuperAdmin/AdminDashboard/SuperAdminDashboard";
-import ManageSectors from "./pages/SuperAdmin/ManageSectors/ManageSectors";
-import Dashboard from "./pages/Viewer/Dashboard/Dashboard";
+import Dashboard from "./pages/Supervisor/Dashboard";
+import PendingRequests from "./pages/Supervisor/PendingRequests";
+import AlertsLog from "./pages/Supervisor/AlertsLog";
+import Reports from "./pages/Supervisor/Reports";
+import Profile from "./pages/Supervisor/Profile";
+import UserDetail from "./pages/Supervisor/UserDetail";
 import Sidebar from "./components/Sidebar/Sidebar";
-import RegisterSoldier from "./pages/Viewer/RegisterSoldier/RegisterSoldier";
-import SoldierRoster from "./pages/Viewer/SoldeirRoster/SoldierRoster";
-import SoldierDetail from "./pages/Viewer/SoldierDetails/SoldierDetail";
 import Login from "./pages/Auth/Login";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import Signup from "./pages/Auth/Signup";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import { useState } from "react";
+import Navbar from "./components/Navbar/Navbar";
 
-// Professional Layout Wrapper
-const Layout = ({ children }) => (
-  <div className="flex h-screen overflow-hidden bg-slate-950">
-    <Sidebar />
-    <div className="flex-1 overflow-y-auto">{children}</div>
-  </div>
-);
+const Layout = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+      {" "}
+      {/* Matches image BG */}
+      {/* Sidebar Overlay for Mobile */}
+      {!isSidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-[45]"
+          onClick={() => setIsSidebarOpen(true)}
+        />
+      )}
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-
-      {/* GHQ SUPER ADMIN ROUTE */}
-      <Route
-        path="/admin-hq"
-        element={
-          <ProtectedRoute requiredRole="SUPER_ADMIN">
-            <Layout>
-              <SuperAdminDashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/manage-sectors"
-        element={
-          <ProtectedRoute requiredRole="SUPER_ADMIN">
-            <Layout>
-              {" "}
-              <ManageSectors />{" "}
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* COMMANDER ROUTES */}
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route
         path="/"
         element={
-          <ProtectedRoute requiredRole="COMMANDER">
+          <ProtectedRoute>
             <Layout>
-              {" "}
-              <Dashboard />{" "}
+              <Dashboard />
             </Layout>
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/roster"
+        path="/users/:userId"
         element={
-          <ProtectedRoute requiredRole="COMMANDER">
+          <ProtectedRoute>
             <Layout>
-              {" "}
-              <SoldierRoster />{" "}
+              <UserDetail />
             </Layout>
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/register-soldier"
+        path="/pending-requests"
         element={
-          <ProtectedRoute requiredRole="COMMANDER">
+          <ProtectedRoute>
             <Layout>
-              {" "}
-              <RegisterSoldier />{" "}
+              <PendingRequests />
             </Layout>
           </ProtectedRoute>
         }
       />
-
       <Route
-        path="/soldier/:id"
+        path="/alerts"
         element={
-          <ProtectedRoute requiredRole="COMMANDER">
+          <ProtectedRoute>
             <Layout>
-              {" "}
-              <SoldierDetail />{" "}
+              <AlertsLog />
             </Layout>
           </ProtectedRoute>
         }
       />
-
-      {/* FALLBACK */}
-      <Route path="*" element={<Navigate to="/login" />} />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Reports />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
