@@ -56,10 +56,28 @@ const AlertsLog = () => {
     loadAlerts();
   }, []);
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const onAlert = (alert) => {
+      if (!alert) return;
+      setAlerts((prev) => {
+        const exists = prev.some((a) => a._id === alert._id);
+        if (exists) return prev;
+        return [alert, ...prev];
+      });
+    };
+
+    socket.on("alert:triggered", onAlert);
+    return () => socket.off("alert:triggered", onAlert);
+  }, [socket]);
+
   // 1. Filter Logic (The "Brain")
   const filteredData = useMemo(() => {
     return alerts.filter((alert) => {
-      const user = users.find((u) => u._id === alert.userId);
+      const user = users.find(
+        (u) => String(u._id) === String(alert.userId),
+      );
       const userName = user?.name?.toLowerCase() || "";
       const matchesSearch =
         userName.includes(searchTerm.toLowerCase()) ||
@@ -107,6 +125,19 @@ const AlertsLog = () => {
           </div>
         </header>
 
+        {loading && (
+          <div className="mb-6 p-4 rounded-2xl bg-white border border-gray-100 text-sm font-medium text-gray-400 animate-pulse">
+            Loading alerts…
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 flex items-start gap-2 p-4 rounded-2xl bg-red-50 border border-red-100 text-sm text-red-600">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
@@ -153,7 +184,7 @@ const AlertsLog = () => {
         {/* Filter Bar */}
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-6 flex flex-wrap items-center gap-4">
           {/* Search */}
-          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex-1 min-w-[200px]">
+          <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex-1 min-w-50">
             <Search size={18} className="text-gray-400" />
             <input
               type="text"
@@ -229,10 +260,12 @@ const AlertsLog = () => {
                 >
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-gray-900">
-                      {users.find((u) => u._id === alert.userId)?.name ||
+                      {users.find(
+                        (u) => String(u._id) === String(alert.userId),
+                      )?.name ||
                         "User"}
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate max-w-[200px]">
+                    <p className="text-[10px] text-gray-400 truncate max-w-50">
                       {alert.message}
                     </p>
                   </td>

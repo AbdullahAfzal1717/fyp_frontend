@@ -37,7 +37,7 @@ const VitalCard = ({
   shadowClass,
 }) => (
   <div
-    className={`bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md`}
+    className={`bg-white p-6 rounded-4xl border border-slate-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md`}
   >
     <div className="flex justify-between items-start mb-4">
       <div
@@ -95,18 +95,20 @@ const UserDetail = () => {
   const [history, setHistory] = useState([]);
   const [risk, setRisk] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Heart Rate");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [liveRes, historyRes, riskRes, alertsRes] =
+      const [liveRes, historyRes, riskRes, alertsRes, usersRes] =
         await Promise.allSettled([
           api.get(`/vitals/${userId}/live`),
           api.get(`/vitals/${userId}/history`),
           api.get(`/ai/risk-score/${userId}`),
           api.get(`/alerts/${userId}`),
+          api.get(`/connections/my-users`),
         ]);
 
       if (liveRes.status === "fulfilled") setLiveVital(liveRes.value.data);
@@ -115,6 +117,12 @@ const UserDetail = () => {
       if (riskRes.status === "fulfilled") setRisk(riskRes.value.data);
       if (alertsRes.status === "fulfilled")
         setAlerts(alertsRes.value.data || []);
+      if (usersRes.status === "fulfilled") {
+        const match = (usersRes.value.data || []).find(
+          (u) => String(u._id) === String(userId),
+        );
+        setPatient(match || null);
+      }
     } catch (err) {
       console.error(getErrorMessage(err));
     } finally {
@@ -129,7 +137,7 @@ const UserDetail = () => {
   useEffect(() => {
     if (!socket) return;
     const onVitalsUpdate = (payload) => {
-      if (payload.userId !== userId) return;
+      if (String(payload.userId) !== String(userId)) return;
       setLiveVital(payload.vital);
       setRisk({
         riskLevel: payload.vital.riskLevel,
@@ -158,6 +166,28 @@ const UserDetail = () => {
     [history, activeTab],
   );
 
+  const rangeFor = useCallback((key) => {
+    const values = history
+      .map((h) => Number(h[key]))
+      .filter((n) => Number.isFinite(n));
+    if (!values.length) {
+      return { min: "--", max: "--", trend: "down" };
+    }
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const latest = values[0];
+    const prev = values[1] ?? latest;
+    return {
+      min: key === "temperature" ? min.toFixed(1) : Math.round(min),
+      max: key === "temperature" ? max.toFixed(1) : Math.round(max),
+      trend: latest >= prev ? "up" : "down",
+    };
+  }, [history]);
+
+  const hrStats = useMemo(() => rangeFor("heartRate"), [rangeFor]);
+  const spo2Stats = useMemo(() => rangeFor("spo2"), [rangeFor]);
+  const tempStats = useMemo(() => rangeFor("temperature"), [rangeFor]);
+
   if (loading)
     return (
       <div className="p-8 text-slate-400 animate-pulse">
@@ -166,7 +196,7 @@ const UserDetail = () => {
     );
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 max-w-400 mx-auto pb-10">
       {/* 1. TOP NAVIGATION */}
       <button
         onClick={() => navigate(-1)}
@@ -180,26 +210,32 @@ const UserDetail = () => {
       </button>
 
       {/* 2. PATIENT IDENTITY HEADER */}
-      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-100">
-            {liveVital?.userName
-              ?.split(" ")
+      <div className="bg-white p-4 sm:p-6 rounded-3xl sm:rounded-4xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white text-xl sm:text-2xl font-black shadow-lg shadow-blue-100 shrink-0">
+            {(patient?.name || "P")
+              .split(" ")
               .map((n) => n[0])
-              .join("") || "SC"}
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-slate-800">
-              {liveVital?.userName || "Patient Profile"}
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 truncate">
+              {patient?.name || "Patient profile"}
             </h1>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-xs font-bold text-slate-400">
-                Female, 32 yrs
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-xs font-bold text-slate-400 truncate">
+                {patient?.email || "Linked patient"}
               </span>
-              <span className="w-1 h-1 rounded-full bg-slate-200" />
-              <span className="text-xs font-bold text-slate-400">
-                Hypertension
-              </span>
+              {liveVital?.activityState && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-slate-200" />
+                  <span className="text-xs font-bold text-slate-400">
+                    {liveVital.activityState}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -209,11 +245,19 @@ const UserDetail = () => {
               Risk Score
             </p>
             <p className="text-3xl font-black text-orange-500">
-              {risk?.riskScore || "--"}
+              {risk?.riskScore != null ? risk.riskScore : "--"}
             </p>
           </div>
-          <div className="px-5 py-2.5 bg-orange-50 border border-orange-100 rounded-2xl text-orange-600 text-xs font-black">
-            ● {risk?.riskLevel || "CAUTION"} RISK
+          <div
+            className={`px-5 py-2.5 rounded-2xl text-xs font-black border ${
+              risk?.riskLevel === "CRITICAL"
+                ? "bg-red-50 border-red-100 text-red-600"
+                : risk?.riskLevel === "WARNING"
+                  ? "bg-amber-50 border-amber-100 text-amber-600"
+                  : "bg-emerald-50 border-emerald-100 text-emerald-600"
+            }`}
+          >
+            ● {risk?.riskLevel || "SAFE"} RISK
           </div>
         </div>
       </div>
@@ -223,31 +267,35 @@ const UserDetail = () => {
         <VitalCard
           icon={Heart}
           label="Heart Rate"
-          value={liveVital?.heartRate || "--"}
+          value={liveVital?.heartRate ?? "--"}
           unit="bpm"
-          min="62"
-          max="112"
-          trend="up"
+          min={hrStats.min}
+          max={hrStats.max}
+          trend={hrStats.trend}
           colorClass="bg-red-500"
         />
         <VitalCard
           icon={Droplets}
           label="SpO2"
-          value={liveVital?.spo2 || "--"}
+          value={liveVital?.spo2 ?? "--"}
           unit="%"
-          min="94"
-          max="99"
-          trend="down"
+          min={spo2Stats.min}
+          max={spo2Stats.max}
+          trend={spo2Stats.trend}
           colorClass="bg-blue-500"
         />
         <VitalCard
           icon={Thermometer}
           label="Temperature"
-          value={liveVital?.temperature || "--"}
+          value={
+            liveVital?.temperature != null
+              ? Number(liveVital.temperature).toFixed(1)
+              : "--"
+          }
           unit="°C"
-          min="36.2"
-          max="37.4"
-          trend="down"
+          min={tempStats.min}
+          max={tempStats.max}
+          trend={tempStats.trend}
           colorClass="bg-amber-500"
         />
       </div>
@@ -327,7 +375,7 @@ const UserDetail = () => {
 
         {/* 5. SIDEBAR: AI ANALYSIS & HISTORY */}
         <div className="lg:col-span-4 space-y-6">
-          <section className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
+          <section className="bg-white rounded-4xl border border-slate-100 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
                 <Zap size={16} className="text-blue-600" /> AI ANALYSIS
@@ -371,7 +419,7 @@ const UserDetail = () => {
           </section>
 
           {/* Recent Alert List */}
-          <section className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
+          <section className="bg-white rounded-4xl border border-slate-100 p-6 shadow-sm">
             <h3 className="text-sm font-black text-slate-800 mb-6">
               Alert History{" "}
               <span className="text-slate-300 ml-1 font-bold text-xs">

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom"; // Added Link import
+import { Link } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import api, { getErrorMessage } from "../../services/api";
 import { useAuth } from "../../context/useAuth";
 import {
@@ -20,7 +21,17 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { login } = useAuth();
+
+  const finishSupervisorLogin = (payload) => {
+    if (payload?.userData?.role !== "SUPERVISOR") {
+      throw new Error(
+        "This web dashboard is only for supervisor accounts. Use the mobile app as a patient, or sign up as a supervisor.",
+      );
+    }
+    login(payload);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,10 +39,7 @@ const Login = () => {
     setError(null);
     try {
       const res = await api.post("/auth/login", { email, password });
-      if (res.data?.userData?.role !== "SUPERVISOR") {
-        throw new Error("This web dashboard is only for supervisor accounts.");
-      }
-      login(res.data);
+      finishSupervisorLogin(res.data);
     } catch (err) {
       setError(getErrorMessage(err, err.message || "Authorization failed"));
     } finally {
@@ -39,60 +47,78 @@ const Login = () => {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const idToken = credentialResponse?.credential;
+      if (!idToken) throw new Error("Google did not return a credential");
+
+      const res = await api.post("/auth/google", {
+        idToken,
+        preferredRole: "SUPERVISOR",
+      });
+      finishSupervisorLogin(res.data);
+    } catch (err) {
+      setError(getErrorMessage(err, err.message || "Google sign-in failed"));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
-      {/* LEFT SIDE: HERO SECTION */}
-      <div className="relative overflow-hidden w-full lg:w-[60%] bg-blue-600 flex flex-col items-center justify-center p-8 lg:p-12 text-white">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500 rounded-full opacity-50 blur-3xl" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-400 rounded-full opacity-30 blur-3xl" />
-        <div className="absolute top-1/4 left-0 w-64 h-64 bg-blue-700 rounded-full opacity-20 -translate-x-1/2" />
+      {/* LEFT: brand panel — stacks on top on mobile */}
+      <div className="relative overflow-hidden w-full lg:w-[55%] min-h-55 lg:min-h-screen bg-blue-600 flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 text-white">
+        <div className="absolute top-[-10%] left-[-10%] w-105 h-105 bg-blue-500 rounded-full opacity-50 blur-3xl" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-90 h-90 bg-blue-400 rounded-full opacity-30 blur-3xl" />
 
         <div className="z-10 w-full max-w-xl text-center">
-          <div className="flex items-center justify-center gap-3 mb-12">
+          <div className="flex items-center justify-center gap-3 mb-6 lg:mb-10">
             <div className="bg-white/20 p-2 rounded-xl backdrop-blur-md">
-              <Activity className="w-8 h-8 text-white" />
+              <Activity className="w-7 h-7 text-white" />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-bold leading-none">Command-X</h1>
+              <h1 className="text-xl sm:text-2xl font-bold leading-none">VitalSync</h1>
               <p className="text-[10px] uppercase tracking-widest opacity-80">
-                Intelligent Health Surveillance
+                Command dashboard
               </p>
             </div>
           </div>
 
-          <h2 className="text-5xl font-bold mb-6 leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 lg:mb-6 leading-tight">
             Monitor. Protect.
-            <br />
-            Save Lives.
+            <br className="hidden sm:block" />
+            Lead with clarity.
           </h2>
-          <p className="text-blue-100 mb-12 max-w-md mx-auto text-lg">
-            AI-powered real-time health surveillance platform for medical
+          <p className="text-blue-100 mb-6 lg:mb-10 max-w-md mx-auto text-sm sm:text-base lg:text-lg">
+            Real-time vitals, context-aware risk scores, and alerts for field
             supervisors.
           </p>
 
-          <div className="space-y-4 mb-12">
+          <div className="hidden md:block space-y-3 mb-8">
             {[
               {
                 icon: Wifi,
-                title: "Real-time Monitoring",
-                desc: "Live vitals refreshed every 3 seconds",
+                title: "Live monitoring",
+                desc: "Socket updates as vitals arrive",
               },
               {
                 icon: Shield,
-                title: "AI-Powered Risk Engine",
-                desc: "Intelligent anomaly detection & scoring",
+                title: "Context-aware risk",
+                desc: "STATIC vs RUNNING thresholds",
               },
               {
                 icon: Globe,
-                title: "Cross Platform",
-                desc: "Web, mobile & wearable device support",
+                title: "Web + mobile + wearable",
+                desc: "One backend for the whole stack",
               },
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-left"
+                className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-left"
               >
-                <div className="bg-blue-500 p-2 rounded-lg">
+                <div className="bg-blue-500 p-2 rounded-lg shrink-0">
                   <feature.icon className="w-5 h-5" />
                 </div>
                 <div>
@@ -102,53 +128,63 @@ const Login = () => {
               </div>
             ))}
           </div>
-
-          <div className="grid grid-cols-3 gap-4 border-t border-white/20 pt-8">
-            <div>
-              <div className="text-2xl font-bold">99.9%</div>
-              <div className="text-[10px] uppercase opacity-70">Uptime SLA</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">&lt;3s</div>
-              <div className="text-[10px] uppercase opacity-70">
-                Alert Latency
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">HIPAA</div>
-              <div className="text-[10px] uppercase opacity-70">Compliant</div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* RIGHT SIDE: LOGIN FORM */}
-      <div className="w-full lg:w-[40%] flex flex-col items-center justify-center p-8 lg:p-16 relative bg-white">
+      {/* RIGHT: form */}
+      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center p-6 sm:p-8 lg:p-12 relative bg-white">
         <div className="w-full max-w-sm">
-          <div className="mb-6">
+          <div className="mb-5">
             <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
-              Supervisor Access Only
+              Supervisor access
             </span>
           </div>
 
-          <h3 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, Doctor
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Welcome back
           </h3>
-          <p className="text-gray-500 mb-8">
-            Sign in to your Command-X dashboard
+          <p className="text-gray-500 mb-6 text-sm sm:text-base">
+            Sign in to your VitalSync command dashboard
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <div className="mb-5 flex justify-center min-h-11">
+            {googleLoading ? (
+              <p className="text-sm text-blue-600 font-medium py-2">
+                Completing Google sign-in…
+              </p>
+            ) : (
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError("Google sign-in failed. Try again.")}
+                theme="outline"
+                size="large"
+                shape="pill"
+                text="continue_with"
+                width="320"
+              />
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1 bg-slate-100" />
+            <span className="text-[11px] font-bold text-slate-400 uppercase">
+              or email
+            </span>
+            <div className="h-px flex-1 bg-slate-100" />
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100">
-                <AlertCircle size={18} /> {error}
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 text-red-600 text-sm border border-red-100">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
             <ModernInput
               label="Email Address"
               type="email"
-              placeholder="dr.reed@commandx.health"
+              placeholder="supervisor@example.com"
               value={email}
               onChange={setEmail}
               required
@@ -166,7 +202,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-9.5 text-gray-400 hover:text-gray-600"
+                aria-label="Toggle password visibility"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -175,7 +212,7 @@ const Login = () => {
             <div className="text-right">
               <Link
                 to="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:underline hover:text-blue-700 transition-colors"
+                className="text-sm font-medium text-blue-600 hover:underline"
               >
                 Forgot password?
               </Link>
@@ -183,29 +220,29 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 disabled:opacity-70 active:scale-[0.98]"
+              disabled={loading || googleLoading}
+              className="w-full bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold py-3.5 sm:py-4 rounded-xl transition-all shadow-lg shadow-blue-200/60 disabled:opacity-70 active:scale-[0.98]"
             >
-              {loading ? "Authenticating..." : "Sign In to Dashboard"}
+              {loading ? "Signing in…" : "Sign In to Dashboard"}
             </button>
           </form>
 
-          {/* New Signup Link Section */}
-          <p className="mt-8 text-center text-sm text-gray-500">
-            Don't have a supervisor account?{" "}
+          <p className="mt-7 text-center text-sm text-gray-500">
+            Need a supervisor account?{" "}
             <Link
               to="/signup"
-              className="text-blue-600 font-bold hover:underline transition-colors"
+              className="text-blue-600 font-bold hover:underline"
             >
               Create Account
             </Link>
           </p>
 
-          <div className="mt-12 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex gap-4">
-            <ShieldCheck className="w-10 h-10 text-blue-500 shrink-0" />
+          <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex gap-3">
+            <ShieldCheck className="w-8 h-8 text-blue-500 shrink-0" />
             <p className="text-[11px] text-gray-500 leading-relaxed">
-              Protected by enterprise-grade TLS encryption. All patient data is
-              fully HIPAA compliant and audit-logged.
+              Demo tip: use <span className="font-semibold">ahmed@test.com</span>{" "}
+              / <span className="font-semibold">123456</span> after seeding, or
+              continue with Google (creates a supervisor account on first use).
             </p>
           </div>
         </div>

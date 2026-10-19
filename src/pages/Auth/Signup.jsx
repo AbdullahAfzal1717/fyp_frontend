@@ -38,7 +38,7 @@ const Signup = () => {
               <Activity className="w-8 h-8 text-white" />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-bold leading-none">Command-X</h1>
+              <h1 className="text-2xl font-bold leading-none">VitalSync</h1>
               <p className="text-[10px] uppercase tracking-widest opacity-80">
                 Intelligent Health Surveillance
               </p>

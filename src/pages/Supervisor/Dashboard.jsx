@@ -30,13 +30,16 @@ const Dashboard = () => {
       setUsers(connectedUsers);
 
       const riskResponses = await Promise.allSettled(
-        connectedUsers.map((user) => api.get(`/ai/risk-score/${user._id}`)),
+        connectedUsers.map((user) =>
+          api.get(`/ai/risk-score/${user._id || user.id}`),
+        ),
       );
 
       const mappedRisk = connectedUsers.reduce((acc, user, index) => {
         const item = riskResponses[index];
+        const key = String(user._id || user.id);
         if (item.status === "fulfilled") {
-          acc[user._id] = item.value.data;
+          acc[key] = item.value.data;
         }
         return acc;
       }, {});
@@ -52,12 +55,50 @@ const Dashboard = () => {
     fetchDashboard();
   }, []);
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const onVitalsUpdate = (payload) => {
+      const uid = payload?.userId != null ? String(payload.userId) : null;
+      const vital = payload?.vital;
+      if (!uid || !vital) return;
+
+      setRiskByUser((prev) => ({
+        ...prev,
+        [uid]: {
+          userId: uid,
+          riskLevel: vital.riskLevel,
+          riskScore: vital.riskScore,
+          timestamp: vital.timestamp,
+          activityState: vital.activityState,
+          vitals: {
+            heartRate: vital.heartRate,
+            spo2: vital.spo2,
+            temperature: vital.temperature,
+            activityState: vital.activityState,
+          },
+        },
+      }));
+    };
+
+    const onAlert = () => {
+      // Refresh risk strip when alerts fire
+      fetchDashboard();
+    };
+
+    socket.on("vitals:update", onVitalsUpdate);
+    socket.on("alert:triggered", onAlert);
+    return () => {
+      socket.off("vitals:update", onVitalsUpdate);
+      socket.off("alert:triggered", onAlert);
+    };
+  }, [socket]);
+
   // 1. FIXED: Dynamic Filtering Logic
   const filteredUsers = useMemo(() => {
     if (filter === "All") return users;
     return users.filter((user) => {
-      const risk = riskByUser[user._id];
-      // Matches "CRITICAL", "CAUTION", or "SAFE" from your AI backend
+      const risk = riskByUser[String(user._id || user.id)];
       return risk?.riskLevel?.toUpperCase() === filter.toUpperCase();
     });
   }, [users, riskByUser, filter]);
@@ -169,13 +210,14 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredUsers.map((user) => {
-              const risk = riskByUser[user._id];
+              const uid = String(user._id || user.id);
+              const risk = riskByUser[uid];
               const isCritical = risk?.riskLevel === "CRITICAL";
 
               return (
                 <div
-                  key={user._id}
-                  className={`bg-white rounded-[32px] border-2 p-6 transition-all hover:shadow-xl ${
+                  key={uid}
+                  className={`bg-white rounded-4xl border-2 p-6 transition-all hover:shadow-xl ${
                     isCritical
                       ? "border-red-100 bg-red-50/10 shadow-red-50"
                       : "border-gray-50"
@@ -265,7 +307,7 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <Link
-                      to={`/users/${user._id}`}
+                      to={`/users/${uid}`}
                       className="px-6 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-all"
                     >
                       View Details <ChevronRight size={14} />
@@ -279,7 +321,7 @@ const Dashboard = () => {
 
         {/* Right Sidebar: Dynamic Recent Alerts */}
         <aside className="w-full lg:w-80 space-y-6">
-          <div className="bg-white rounded-[32px] border border-gray-100 p-6 shadow-sm sticky top-24">
+          <div className="bg-white rounded-4xl border border-gray-100 p-6 shadow-sm sticky top-24">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-gray-900">Recent Risk Shifts</h3>
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -287,13 +329,17 @@ const Dashboard = () => {
 
             <div className="space-y-4">
               {users
-                .filter((u) => riskByUser[u._id]?.riskLevel !== "SAFE")
+                .filter((u) => {
+                  const r = riskByUser[String(u._id || u.id)];
+                  return r && r.riskLevel !== "SAFE";
+                })
                 .slice(0, 5)
                 .map((user) => {
-                  const risk = riskByUser[user._id];
+                  const uid = String(user._id || user.id);
+                  const risk = riskByUser[uid];
                   return (
                     <div
-                      key={user._id}
+                      key={uid}
                       className="p-4 rounded-2xl border-l-4 bg-gray-50 border-red-500 transition-hover hover:bg-red-50/30"
                     >
                       <div className="flex justify-between items-start mb-1">

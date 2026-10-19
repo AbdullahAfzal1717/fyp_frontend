@@ -37,7 +37,7 @@ const ForgotPassword = () => {
               <ModernInput
                 label="Registered Email"
                 type="email"
-                placeholder="dr.reed@commandx.health"
+                placeholder="dr.reed@vitalsync.health"
                 value={email}
                 onChange={setEmail}
                 required

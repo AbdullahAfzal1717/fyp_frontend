@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] md:hidden"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-100 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         className={`
           fixed top-0 left-0 h-screen bg-white border-r border-gray-100
           transition-all duration-300 ease-in-out flex flex-col
-          z-[110] ${isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72"}
+          z-110 ${isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72"}
           md:translate-x-0 md:sticky md:z-30 md:w-20 
           lg:w-64
       `}
@@ -132,10 +132,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </div>
             <div className="flex flex-col md:hidden lg:flex">
               <span className="font-bold text-gray-900 leading-none tracking-tight">
-                Command-X
+                VitalSync
               </span>
               <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                Health Surveillance
+                Command dashboard
               </span>
             </div>
           </div>
@@ -176,7 +176,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <span className="text-sm flex-1 truncate">{item.label}</span>
                 {item.badge > 0 && (
                   <span
-                    className={`${item.path === "/alerts" ? "bg-red-500" : "bg-blue-600"} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-[18px] text-center`}
+                    className={`${item.path === "/alerts" ? "bg-red-500" : "bg-blue-600"} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 min-w-4.5 text-center`}
                   >
                     {item.badge}
                   </span>

@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       <div className="h-screen bg-white flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4" />
         <p className="text-blue-600 font-bold tracking-widest text-xs uppercase">
-          Command-X Securing Session...
+          VitalSync Securing Session...
         </p>
       </div>
     );
