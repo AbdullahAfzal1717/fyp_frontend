@@ -81,7 +81,7 @@ const Login = () => {
             <div className="text-left">
               <h1 className="text-xl sm:text-2xl font-bold leading-none">VitalSync</h1>
               <p className="text-[10px] uppercase tracking-widest opacity-80">
-                Command dashboard
+                Supervisor dashboard
               </p>
             </div>
           </div>
@@ -144,7 +144,7 @@ const Login = () => {
             Welcome back
           </h3>
           <p className="text-gray-500 mb-6 text-sm sm:text-base">
-            Sign in to your VitalSync command dashboard
+            Sign in to your VitalSync supervisor dashboard
           </p>
 
           <div className="mb-5 flex justify-center min-h-11">

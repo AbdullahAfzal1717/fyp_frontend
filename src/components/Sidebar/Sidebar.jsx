@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 VitalSync
               </span>
               <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                Command dashboard
+                Supervisor dashboard
               </span>
             </div>
           </div>
